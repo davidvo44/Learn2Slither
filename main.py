@@ -7,11 +7,11 @@ def getNextState(state, action):
 
     if action == 0 and col > 0:
         col -= 1
-    elif action == 1 and col < 3:      
+    elif action == 1 and col < 3:
         col += 1
-    elif action == 2 and row > 0:     
+    elif action == 2 and row > 0:
         row -= 1
-    elif action == 3 and row < 3:     
+    elif action == 3 and row < 3:
         row += 1
 
     return row * 4 + col
@@ -71,7 +71,8 @@ def start():
 
     for i in range(4):
         for j in range(4):
-            plt.text(j, i, f'{q_values_grid[i, j]:.2f}', ha='center', va='center', color='black')
+            plt.text(j, i, f'{q_values_grid[i, j]:.2f}', ha='center',
+                     va='center', color='black')
 
     plt.show()
 

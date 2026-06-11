@@ -1,4 +1,4 @@
-from main import start
+from testVisual import start
 
 if __name__ == "__main__":
     start()

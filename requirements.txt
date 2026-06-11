@@ -1,7 +1,7 @@
 pyglet==1.5.1
 PyOpenGL
 pyvirtualdisplay
-gym==0.24
+gymnasium
 pygame
 numpy
 matplotlib
