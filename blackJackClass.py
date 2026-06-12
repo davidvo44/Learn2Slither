@@ -15,7 +15,7 @@ class BlackJackAgent:
         self.qValues = defaultdict(lambda: np.zeros(env.action_space.n))
 
         self.lr = learningRate
-        self.initialEpsilon = initialEpsilon
+        self.epsilon = initialEpsilon
         self.epsilonDecay = epsilonDecay
         self.finalEpsilon = finalEpsilon
         self.discountFactor = discountFactor  # How much we care about future rewards
@@ -34,18 +34,24 @@ class BlackJackAgent:
 
         # With probability (1-epsilon): exploit (best known action)
         else:
-            return int(np.argmax(self.q_values[obs]))
+            return int(np.argmax(self.qValues[obs]))
         
     def update(self,
                obs: tuple[int, int, bool],
-               action:int,
-               reward:float,
-               terminated:bool,
+               action: int,
+               reward: float,
+               terminated: bool,
                nextObs: tuple[int, int, bool]):
-        """
-        Update Q value
-        """
+    
         futureQ = (not terminated) * np.max(self.qValues[nextObs])
+        target = reward + self.discountFactor * futureQ
+        temporalDifference = target - self.qValues[obs][action]
+
+        self.qValues[obs][action] = (
+            self.qValues[obs][action] + self.lr * temporalDifference
+        )
+
+        self.trainingError.append(temporalDifference)
 
     def decayEpsilon(self):
         self.epsilon = max(self.finalEpsilon, self.epsilon - self.epsilonDecay)
