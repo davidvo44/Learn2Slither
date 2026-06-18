@@ -90,9 +90,6 @@ def start():
     test_agent(agent, env)
 
 
-
-
-
 def get_moving_avgs(arr, window, convolution_mode):
     return np.convolve(
         np.array(arr).flatten(),
