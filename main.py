@@ -1,130 +1,113 @@
-import numpy as np
+from dqn_class import DQN
+import gymnasium as gym
+import torch.optim as optim
+import torch
+from hyperparameter_class import HyperParameters
 import matplotlib.pyplot as plt
+import random
+from collections import deque
+import torch.nn as nn
+from gymnasium.wrappers import RecordVideo, RecordEpisodeStatistics
+import numpy as np
 
 
-def getNextState(state, action):
-    row, col = divmod(state, 4)
+def dqnCartpole(hyperparam: HyperParameters):
+    env = gym.make("CartPole-v1",
+                   render_mode="rgb_array")
 
-    if action == 0 and col > 0:
-        col -= 1
-    elif action == 1 and col < 3:
-        col += 1
-    elif action == 2 and row > 0:
-        row -= 1
-    elif action == 3 and row < 3:
-        row += 1
+    training_period = 100
 
-    return row * 4 + col
-
-
-def start():
-    # Define the Environment
-    n_states = 16
-    n_actions = 4
-    goal_state = 15
-
-    Q_table = np.zeros((n_states, n_actions))
-    print('test')
-
-    # Set Hyperparameters
-    learning_rate = 0.8
-    discount_factor = 0.95
-    exploration_prob = 0.2
-    epochs = 1000
-
-    # A-Learning Algorithm
-
-    for epoch in range(epochs):
-        current_state = np.random.randint(0, n_states)  
-
-        while True:
-            if np.random.rand() < exploration_prob:
-                action = np.random.randint(0, n_actions)
-            else:
-                action = np.argmax(Q_table[current_state])
-
-            next_state = getNextState(current_state, action)
-
-            reward = 1 if next_state == goal_state else 0
-
-            Q_table[current_state, action] += learning_rate * (
-                reward + discount_factor * np.max(Q_table[next_state]) -
-                Q_table[current_state, action]
-            )
-
-            if next_state == goal_state:
-                break
-
-            current_state = next_state
-
-    # Output
-    q_values_grid = np.max(Q_table, axis=1).reshape((4, 4))
-
-    plt.figure(figsize=(6, 6))
-    plt.imshow(q_values_grid, cmap='coolwarm', interpolation='nearest')
-    plt.colorbar(label='Q-value')
-    plt.title('Learned Q-values for Each State')
-    plt.xticks(np.arange(4), ['0', '1', '2', '3'])
-    plt.yticks(np.arange(4), ['0', '1', '2', '3'])
-    plt.gca().invert_yaxis()
-    plt.grid(True)
-
-    for i in range(4):
-        for j in range(4):
-            plt.text(j, i, f'{q_values_grid[i, j]:.2f}', ha='center',
-                     va='center', color='black')
-
-    plt.show()
-
-    print("Learned Q-table:")
-    print(Q_table)
-
-
-def get_moving_avgs(arr, window, convolution_mode):
-    return np.convolve(
-        np.array(arr).flatten(),
-        np.ones(window),
-        mode=convolution_mode
-    ) / window
-    
-    # Smooth over a 500-episode window
-    rolling_length = 500
-    fig, axs = plt.subplots(ncols=3, figsize=(12, 5))
-    
-    print('test')
-    # Episode rewards (win/loss performance)
-    axs[0].set_title("Episode rewards")
-    reward_moving_average = get_moving_avgs(
-        env.return_queue,
-        rolling_length,
-        "valid"
+    env = RecordVideo(
+        env,
+        video_folder='CartPole-agent',
+        name_prefix='train',
+        episode_trigger=lambda x: x % training_period == 0
     )
-    axs[0].plot(range(len(reward_moving_average)), reward_moving_average)
-    axs[0].set_ylabel("Average Reward")
-    axs[0].set_xlabel("Episode")
-    
-    # Episode lengths (how many actions per hand)
-    axs[1].set_title("Episode lengths")
-    length_moving_average = get_moving_avgs(
-        env.length_queue,
-        rolling_length,
-        "valid"
-    )
-    axs[1].plot(range(len(length_moving_average)), length_moving_average)
-    axs[1].set_ylabel("Average Episode Length")
-    axs[1].set_xlabel("Episode")
-    
-    # Training error (how much we're still learning)
-    axs[2].set_title("Training Error")
-    training_error_moving_average = get_moving_avgs(
-        agent.training_error,
-        rolling_length,
-        "same"
-    )
-    axs[2].plot(range(len(training_error_moving_average)), training_error_moving_average)
-    axs[2].set_ylabel("Temporal Difference Error")
-    axs[2].set_xlabel("Step")
-    
-    plt.tight_layout()
-    plt.show()
-    
+
+    env = RecordEpisodeStatistics(env)
+    # Initialize Q-networks
+    input_dim = env.observation_space.shape[0]
+    output_dim = env.action_space.n
+    policy_net = DQN(input_dim, output_dim, hyperparam.lr)
+    target_net = DQN(input_dim, output_dim, hyperparam.lr)
+    target_net.load_state_dict(policy_net.state_dict())
+    target_net.eval()
+
+    rewards_per_episode = []
+    steps_done = 0
+
+    memory = deque(maxlen=hyperparam.memory_size)
+
+    for episode in range(hyperparam.episodes):
+        state, _ = env.reset()
+        episode_reward = 0
+        done = False
+
+        if episode % 100 == 0:
+            print(episode)
+        while not done:
+            action = select_action(state, hyperparam.epsilon, env, policy_net)
+            next_state, reward, terminated, truncated, _ = env.step(action)
+
+            done = terminated or truncated
+            memory.append((state, action, reward, next_state, done))
+
+            state = next_state
+            episode_reward += reward
+
+            optimize_model(memory, hyperparam, policy_net, target_net)
+
+            if steps_done % hyperparam.target_update_freq == 0:
+                target_net.load_state_dict(policy_net.state_dict())
+            
+            steps_done += 1
+
+        hyperparam.epsilon = max(hyperparam.epsilon_min,
+                                 hyperparam.epsilon_decay *
+                                 hyperparam.epsilon)
+
+        rewards_per_episode.append(episode_reward)
+
+    plt.plot(rewards_per_episode)
+    plt.xlabel('Episode')
+    plt.ylabel('Reward')
+    plt.title('DQN on CartPole')
+    plt.savefig('dqncartpole.png')
+
+
+# Function to choose action using epsilon-greedy policy
+def select_action(state, epsilon, env, policy_net):
+    if random.random() < epsilon:
+        return env.action_space.sample()  # Explore
+    else:
+        state = torch.FloatTensor(state).unsqueeze(0)
+        q_values = policy_net(state)
+        return torch.argmax(q_values).item()  # Exploit
+
+
+# Function to optimize the model using experience replay
+def optimize_model(memory, hyperparam: HyperParameters, policy_net, target_net):
+    if len(memory) < hyperparam.batch_size:
+        return
+    batch = random.sample(memory, hyperparam.batch_size)
+    state_batch, action_batch, reward_batch, next_state_batch, done_batch = zip(*batch)
+
+    state_batch = torch.FloatTensor(np.array(state_batch))
+    action_batch = torch.LongTensor(action_batch).unsqueeze(1)
+    reward_batch = torch.FloatTensor(reward_batch)
+    next_state_batch = torch.FloatTensor(np.array(next_state_batch))
+    done_batch = torch.FloatTensor(done_batch)
+
+    # Compute Q-values for current states
+    q_values = policy_net(state_batch).gather(1, action_batch).squeeze()
+
+    # Compute target Q-values using the target network
+    with torch.no_grad():
+        max_next_q_values = target_net(next_state_batch).max(1)[0]
+        target_q_values = reward_batch + hyperparam.gamma * max_next_q_values * (1 - done_batch)
+
+    loss = nn.MSELoss()(q_values, target_q_values)
+
+    policy_net.optimizer.zero_grad()
+    loss.backward()
+    policy_net.optimizer.step()

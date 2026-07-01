@@ -2,7 +2,10 @@ pyglet==1.5.1
 PyOpenGL
 pyvirtualdisplay
 gymnasium
+gymnasium[other]
 pygame
 numpy
 matplotlib
 tqdm
+torch
+torchrl
