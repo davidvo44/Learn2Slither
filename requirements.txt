@@ -9,3 +9,4 @@ matplotlib
 tqdm
 torch
 torchrl
+ale-py

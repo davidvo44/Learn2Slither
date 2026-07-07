@@ -9,9 +9,11 @@ from collections import deque
 import torch.nn as nn
 from gymnasium.wrappers import RecordVideo, RecordEpisodeStatistics
 import numpy as np
+import ale_py
 
 
 def dqnCartpole(hyperparam: HyperParameters):
+    gym.register_envs(ale_py)
     env = gym.make("CartPole-v1",
                    render_mode="rgb_array")
 
@@ -28,11 +30,11 @@ def dqnCartpole(hyperparam: HyperParameters):
     # Initialize Q-networks
     input_dim = env.observation_space.shape[0]
     output_dim = env.action_space.n
-    policy_net = DQN(input_dim, output_dim, hyperparam.lr)
-    target_net = DQN(input_dim, output_dim, hyperparam.lr)
+    policy_net = DQN(input_dim, output_dim)
+    target_net = DQN(input_dim, output_dim)
     target_net.load_state_dict(policy_net.state_dict())
     target_net.eval()
-
+    optimizer = optim.Adam(policy_net.parameters(), lr=hyperparam.lr)
     rewards_per_episode = []
     steps_done = 0
 
@@ -55,7 +57,7 @@ def dqnCartpole(hyperparam: HyperParameters):
             state = next_state
             episode_reward += reward
 
-            optimize_model(memory, hyperparam, policy_net, target_net)
+            optimize_model(memory, hyperparam, policy_net, target_net, optimizer)
 
             if steps_done % hyperparam.target_update_freq == 0:
                 target_net.load_state_dict(policy_net.state_dict())
@@ -67,7 +69,7 @@ def dqnCartpole(hyperparam: HyperParameters):
                                  hyperparam.epsilon)
 
         rewards_per_episode.append(episode_reward)
-
+    env.close()
     plt.plot(rewards_per_episode)
     plt.xlabel('Episode')
     plt.ylabel('Reward')
@@ -86,7 +88,7 @@ def select_action(state, epsilon, env, policy_net):
 
 
 # Function to optimize the model using experience replay
-def optimize_model(memory, hyperparam: HyperParameters, policy_net, target_net):
+def optimize_model(memory, hyperparam: HyperParameters, policy_net, target_net, optimizer):
     if len(memory) < hyperparam.batch_size:
         return
     batch = random.sample(memory, hyperparam.batch_size)
@@ -108,6 +110,6 @@ def optimize_model(memory, hyperparam: HyperParameters, policy_net, target_net):
 
     loss = nn.MSELoss()(q_values, target_q_values)
 
-    policy_net.optimizer.zero_grad()
+    optimizer.zero_grad()
     loss.backward()
-    policy_net.optimizer.step()
+    optimizer.step()

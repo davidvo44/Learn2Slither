@@ -3,7 +3,7 @@ class HyperParameters():
     def __init__(self, lr=0.001, gamma=0.99, epsilon=1.0,
                  epislon_min=0.01, epsilon_decay=0.995,
                  batch_size=64, target_update_freq=1000,
-                 memory_size=1000, episodes=1000):
+                 memory_size=1000, episodes=2000):
         self.lr = lr
         self.gamma = gamma
         self.epsilon = epsilon

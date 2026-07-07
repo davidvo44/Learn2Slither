@@ -5,12 +5,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 from hyperparameter_class import HyperParameters
 from main import dqnCartpole
+from traning_ddqn import train_ddqn
 
 if __name__ == "__main__":
-    hyperparam = HyperParameters(memory_size=10000,
-                                 lr=0.0001,
-                                 target_update_freq=2000)
-    dqnCartpole(hyperparam)
+
+    '''
+    1rst method with DQN cartpole
+    '''
+    # hyperparam = HyperParameters(memory_size=10000,
+    #                              lr=0.0001,
+    #                              target_update_freq=2000)
+    # dqnCartpole(hyperparam)
+
+    '''
+    Cartpole DDQN
+    '''
+    train_ddqn()
+
+    '''
+    Frozen Lake with Q table
+    '''
     # training_period = 5000
     # env = gym.make(
     #     "FrozenLake-v1",
