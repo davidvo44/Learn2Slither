@@ -6,25 +6,24 @@ import matplotlib.pyplot as plt
 from hyperparameter_class import HyperParameters
 from main import dqnCartpole
 from traning_ddqn import train_ddqn
+from atari_ddqn import atari_ddqn
+
 
 if __name__ == "__main__":
 
-    '''
-    1rst method with DQN cartpole
-    '''
+    '''1rst method with DQN cartpole'''
     # hyperparam = HyperParameters(memory_size=10000,
     #                              lr=0.0001,
     #                              target_update_freq=2000)
     # dqnCartpole(hyperparam)
 
-    '''
-    Cartpole DDQN
-    '''
-    train_ddqn()
+    '''Cartpole DDQN'''
+    # train_ddqn()
 
-    '''
-    Frozen Lake with Q table
-    '''
+    '''Atari DDQN'''
+    atari_ddqn()
+
+    '''Frozen Lake with Q table'''
     # training_period = 5000
     # env = gym.make(
     #     "FrozenLake-v1",

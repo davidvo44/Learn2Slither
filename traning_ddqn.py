@@ -59,14 +59,14 @@ def train_ddqn():
         scores.append(score)
         steps_array.append(n_steps)
 
+        if avg_score[-1] > best_score:
+            best_score = avg_score[-1]
         avg_score.append(np.mean(scores[-100:]))
         print('episode:', episode, 'score:', score,
               'average score %.1f' % avg_score[-1],
               'best score %.2f' % best_score,
               'epsilon %.2f' % agent.epsilon, 'steps', n_steps)
 
-        if avg_score[-1] > best_score:
-            best_score = avg_score[-1]
         
         eps_history.append(agent.epsilon)
         if load_checkpoint and n_steps >= 18000:

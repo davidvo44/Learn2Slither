@@ -13,11 +13,10 @@ import ale_py
 
 
 def dqnCartpole(hyperparam: HyperParameters):
-    gym.register_envs(ale_py)
     env = gym.make("CartPole-v1",
                    render_mode="rgb_array")
 
-    training_period = 100
+    training_period = 10
 
     env = RecordVideo(
         env,

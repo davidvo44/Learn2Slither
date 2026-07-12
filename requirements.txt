@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 pyglet==1.5.1
 PyOpenGL
 pyvirtualdisplay

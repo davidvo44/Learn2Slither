@@ -11,16 +11,16 @@ class DDQNAgent(object):
     def __init__(self,
                  n_actions,
                  input_dims,
-                 lr=0.001,
+                 lr=0.0001,
                  gamma=0.99,
                  epsilon=1.0,
-                 epislon_min=0.01,
-                 epsilon_decay=0.99995,
-                 batch_size=64,
+                 epsilon_min=0.05,
+                 epsilon_decay=0.99999,
+                 batch_size=32,
                  target_update_freq=1000,
-                 mem_size=1000,
+                 mem_size=500000,
                  episodes=1000,
-                 replace=1000,
+                 replace=2000,
                  algo=None
                  ):
         
@@ -29,7 +29,7 @@ class DDQNAgent(object):
         self.lr = lr
         self.gamma = gamma
         self.epsilon = epsilon
-        self.eps_min = epislon_min
+        self.eps_min = epsilon_min
         self.eps_dec = epsilon_decay
         self.batch_size = batch_size
         self.target_update_freq = target_update_freq
@@ -53,20 +53,32 @@ class DDQNAgent(object):
         
         self.q_eval.optimizer.zero_grad()
         self.replace_target_network()
+
         states, actions, rewards, states_, dones = self.sample_memory()
-
         indices = np.arange(self.batch_size)
-        q_pred = self.q_eval.forward(states)[indices, actions]
-        q_next = self.q_next.forward(states_)
-        q_eval = self.q_eval.forward(states_)
+        # Q-Valeurs prédites pour l'état actuel et l'action choisie
+        q_pred = self.q_eval(states)[indices, actions]
 
-        max_actions = torch.argmax(q_eval, dim=1)
-        q_next[dones] = 0.0
+        # Calcul DDQN avec detach complet pour éviter de corrompre les gradients futurs
+        with torch.no_grad():
+            q_eval_next = self.q_eval(states_)
+            max_actions = torch.argmax(q_eval_next, dim=1)
+        
+        # 2. Évaluation de cette action par le modèle cible (Target Network)
+            q_next_preds = self.q_next(states_)
+            q_next_val = q_next_preds[indices, max_actions]
 
-        q_target = rewards + self.gamma * q_next[indices, max_actions]
+        # 3. Si l'etat fini, pas de future
+            q_next_val[dones] = 0.0
+
+        # Cible finale stabilisée
+            q_target = rewards + self.gamma * q_next_val
+
         loss = self.q_eval.loss(q_target, q_pred)
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.q_eval.parameters(), max_norm=1.0)
         self.q_eval.optimizer.step()
+
         self.learn_step_counter += 1
         self.decrement_epsilon()
 
@@ -82,19 +94,25 @@ class DDQNAgent(object):
     def choose_action(self, observation, env):
         if random.random() < self.epsilon:
             return env.action_space.sample()
-        state = torch.tensor(observation, dtype=torch.float32).unsqueeze(0)
+        
+        #conversion
+        state = np.array(observation, dtype=np.float32) / 255.0
+        state_t = torch.tensor(state).unsqueeze(0)
+
         with torch.no_grad():
-            actions = self.q_eval(state)
+            actions = self.q_eval(state_t)
+
         return torch.argmax(actions).item()
         
     def sample_memory(self):
         states, actions, rewards, next_states, dones = \
             self.memory.sample_buffer(self.batch_size)
 
-        states = torch.tensor(states, dtype=torch.float32)
+        # C'est ici qu'on applique le / 255.0 au lot entier (Batch)
+        states = torch.tensor(states, dtype=torch.float32) / 255.0
         actions = torch.tensor(actions, dtype=torch.long)
         rewards = torch.tensor(rewards, dtype=torch.float32)
-        next_states = torch.tensor(next_states, dtype=torch.float32)
+        next_states = torch.tensor(next_states, dtype=torch.float32) / 255.0
         dones = torch.tensor(dones, dtype=torch.bool)
 
         return states, actions, rewards, next_states, dones
