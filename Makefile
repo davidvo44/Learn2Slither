@@ -20,3 +20,6 @@ re : clean all
 
 run:
 	$(PYTHON) -m init
+
+snake:
+	$(PYTHON) -m src.initSnake

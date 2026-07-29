@@ -8,7 +8,7 @@ import ale_py
 
 def atari_ddqn():
     gym.register_envs(ale_py)
-    n_games = 2000
+    n_games = 5000
     training_period = 100
 
     env = gym.make('ALE/Breakout-v5',
@@ -44,12 +44,12 @@ def atari_ddqn():
 
     best_score = 0.0
     load_checkpoint = False
-    scores = []
     for episode in range(n_games):
         score = 0
         observation, _ = env.reset()
         observation, reward, terminated, truncated, info = env.step(1)
-        score += reward
+        clipped_reward = np.sign(reward)
+        score += clipped_reward
         current_lives = info.get('lives', 5)
         done = terminated or truncated
         if episode % 100 == 0:
@@ -60,12 +60,15 @@ def atari_ddqn():
             action = agent.choose_action(observation, env)
 
             observation_, reward, terminated, truncated, info = env.step(action)
+            print('SHAPE',)
+            clipped_reward = np.sign(reward)
+
             done = terminated or truncated
 
             new_lives = info.get('lives', 5)
             if new_lives < current_lives and not (terminated or truncated):
                 next_obs, fire_reward, terminated, truncated, info = env.step(1)
-                reward += fire_reward  # On cumule la récompense si besoin
+                clipped_reward += fire_reward  # On cumule la récompense si besoin
                 current_lives = new_lives
             else:
                 current_lives = new_lives
@@ -74,7 +77,7 @@ def atari_ddqn():
             #     score += 1
             # if ram_after[4] < ram_before[4]:
             #     score -= 1
-            score += reward
+            score += clipped_reward
 
             if not load_checkpoint:
                 agent.memory.store_transition(observation, action, reward, observation_, done)

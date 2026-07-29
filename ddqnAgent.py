@@ -15,10 +15,10 @@ class DDQNAgent(object):
                  gamma=0.99,
                  epsilon=1.0,
                  epsilon_min=0.05,
-                 epsilon_decay=0.99999,
+                 epsilon_decay=0.999995,
                  batch_size=32,
                  target_update_freq=1000,
-                 mem_size=500000,
+                 mem_size=100000,
                  episodes=1000,
                  replace=2000,
                  algo=None
@@ -95,7 +95,7 @@ class DDQNAgent(object):
         if random.random() < self.epsilon:
             return env.action_space.sample()
         
-        #conversion
+        # conversion
         state = np.array(observation, dtype=np.float32) / 255.0
         state_t = torch.tensor(state).unsqueeze(0)
 
