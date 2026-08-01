@@ -30,15 +30,13 @@ class GridWorldEnv(gym.Env):
 
         # Observations are dictionaries with the agent's and the target's location.
         # Each location is encoded as an element of {0, ..., `size`}^2, i.e. MultiDiscrete([size, size]).
-        self.observation_space = spaces.MultiBinary([4, 11])
-        # self.observation_space = spaces.Dict(
-        #     {
-        #         "top": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-        #         "bot": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-        #         "left": spaces.Box(0, size - 1, shape=(2,), dtype=int),
-        #         "right": spaces.Box(0, size - 1, shape=(2,), dtype=int)
-        #     }
-        # )
+        self.observation_space = spaces.Box(
+            low=0.0, 
+            high=1.0, 
+            shape=(16,), 
+            dtype=np.float32
+        )
+
         self._agent_location = np.array([-1, -1], dtype=int)
         self._agent_body = []
         self._target_location = np.array([-1, -1], dtype=int)
@@ -75,13 +73,78 @@ class GridWorldEnv(gym.Env):
         self.clock = None
 
     def _get_obs(self):
-        top = self.create_vision(Actions.UP.value)
-        bot = self.create_vision(Actions.DOWN.value)
-        left = self.create_vision(Actions.LEFT.value)
-        right = self.create_vision(Actions.RIGHT.value)
+        # Vector direction : UP, DOWN, LEFT, RIGHT
+        directions = [
+            self._action_to_direction[Actions.UP.value],
+            self._action_to_direction[Actions.DOWN.value],
+            self._action_to_direction[Actions.LEFT.value],
+            self._action_to_direction[Actions.RIGHT.value]
+        ]
 
-        obs = np.array([top, bot, left, right], dtype=np.int8)
-        return obs
+        obs_list = []
+        for d in directions:
+            obs_list.extend(self.create_vision_direction(d))
+
+        # Retourne un vecteur float32 plat de taille 16 (4 directions x 4 infos)
+        return np.array(obs_list, dtype=np.float32)
+
+    def create_vision_direction(self, direction):
+        head = np.array(self._agent_location, dtype=int)
+        current_pos = head.copy()
+    
+        wall_hit = False
+        dist_wall = 0
+        body_dist = 0.0  # 0 si pas de corps vu
+        apple_red_dist = 0.0
+        apple_green_dist = 0.0
+        step = 1
+        while not wall_hit:
+            current_pos += direction
+            # detect wall
+            if current_pos[0] < 0 or current_pos[0] >= self.size or \
+                current_pos[1] < 0 or current_pos[1] >= self.size:
+                wall_hit = True
+                dist_wall = step
+                break
+
+            # detect body
+            if body_dist == 0:
+                for i in self._agent_body:
+                    if np.array_equal(current_pos, i):
+                        body_dist = step
+                        break
+            
+            # detect red Apple
+            if apple_red_dist == 0:
+                if np.array_equal(current_pos, self._target_location):
+                    apple_red_dist = step
+
+            # detect green Apple
+            if apple_green_dist == 0:
+                for i in self._green_apple:
+                    if np.array_equal(current_pos, i):
+                        apple_green_dist = step
+                        break
+                    
+            step += 1
+
+        # normalise
+
+        if dist_wall != 0:
+            dist_wall = dist_wall / self.size
+        if body_dist != 0:
+            body_dist = body_dist / self.size
+        else:
+            body_dist = 1
+        if apple_red_dist != 0:
+            apple_red_dist = apple_red_dist / self.size
+        else:
+            apple_red_dist = 1
+        if apple_green_dist != 0:
+            apple_green_dist = apple_green_dist / self.size
+        else:
+            apple_green_dist = 1
+        return [dist_wall, apple_red_dist, apple_green_dist, body_dist]
 
     def create_vision(self, action):
         result = np.zeros(11)
@@ -194,19 +257,18 @@ class GridWorldEnv(gym.Env):
         if not np.array_equal(newpos, np.clip(
             self._agent_location + direction, 0, self.size - 1
         )):
-            reward = -5
+            reward += -10
             terminated = True
 
         for i in range(len(self._agent_body)):
             # Body Hit
             if np.array_equal(newpos, self._agent_body[i]):
                 if i != 0:
-                    reward = -5
+                    reward += -10
                     terminated = True
-                    print('worm hit')
             # First Body Hit
                 if i == 0:
-                    print('head hit')
+                    reward += -0.2
                     newpos = self._agent_location
                     break
         # Update Head Snake
@@ -222,16 +284,19 @@ class GridWorldEnv(gym.Env):
         
         # Detection Apple
         if np.array_equal(self._agent_location, self._target_location):
-            reward = -1
+            reward += -2
+            self._target_location = self.set_location()
+            # self._agent_body.pop(-1)
         
         if np.array_equal(self._agent_location, self._green_apple[0]):
-            reward += 1
+            reward += 5
             self.add_snake_body()
             self._green_apple[0] = self.set_location()
         if np.array_equal(self._agent_location, self._green_apple[1]):
-            reward += 1
+            reward += 5
             self.add_snake_body()
             self._green_apple[1] = self.set_location()
+        reward -= 0.001
 
 
         # An episode is done iff the agent has reached the target

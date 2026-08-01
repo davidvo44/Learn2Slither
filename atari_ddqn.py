@@ -60,7 +60,6 @@ def atari_ddqn():
             action = agent.choose_action(observation, env)
 
             observation_, reward, terminated, truncated, info = env.step(action)
-            print('SHAPE',)
             clipped_reward = np.sign(reward)
 
             done = terminated or truncated
