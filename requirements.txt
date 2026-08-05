@@ -11,3 +11,5 @@ tqdm
 torch
 torchrl
 ale-py
+click==8.0.3
+inquirerpy==0.3.4
