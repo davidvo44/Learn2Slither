@@ -2,12 +2,13 @@ import os
 
 
 def find_all():
+    print(os.path.abspath(__file__))
     result = []
     for root, dirs, files in os.walk("."):
         for filename in files:
             if filename.endswith(".py"):
                 result.append(os.path.join(root))
-    return result
+    # return result
 
 
 def find(name, path):
