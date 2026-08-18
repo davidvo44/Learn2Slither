@@ -46,10 +46,7 @@ def addParameter():
 
 
 def newParam(param):
-    if param == "Learning Rate":
-        newChange = click.prompt(f"\nNew data for {param}", type=float)
-    else:
-        newChange = click.prompt(f"\nNew data for {param}", type=int)
+    newChange = click.prompt(f"\nNew data for {param}", type=float)
     return newChange
 
 

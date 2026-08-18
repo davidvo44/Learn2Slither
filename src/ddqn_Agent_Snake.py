@@ -14,7 +14,6 @@ class DDQNAgent(object):
                  gamma=0.99,
                  epsilon=1.0,
                  epsilon_min=0.01,
-                 epsilon_decay=0.99998,
                  batch_size=128,
                  target_update_freq=1000,
                  mem_size=100000,
