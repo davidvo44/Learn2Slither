@@ -112,11 +112,12 @@ class DDQNAgent(object):
         if mode == 'TRAIN':
             mask_tensor = torch.tensor(valid_actions_mask, dtype=torch.bool)
             actions[~mask_tensor] = float('-inf')
-        if visual is True:
-            print('right:%.2f' % actions[0].item(),
-                  'left: %.2f' % actions[2].item(),
-                  'up: %.2f' % actions[1].item(),
-                  'down: %.2f' % actions[3].item())
+        if visual:
+            print(
+                  '         U: %.2f\n' % actions[1].item(),
+                  'L:%.2f     ' % actions[2].item(),
+                  '     R: %.2f\n' % actions[0].item(),
+                  '        D: %.2f' % actions[3].item())
         self.last_move = torch.argmax(actions).item()
         return self.last_move
 
