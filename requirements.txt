@@ -1,0 +1,15 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+pyglet==1.5.1
+PyOpenGL
+pyvirtualdisplay
+gymnasium
+gymnasium[other]
+pygame
+numpy
+matplotlib
+tqdm
+torch
+torchrl
+ale-py
+click==8.0.3
+inquirerpy==0.3.4
