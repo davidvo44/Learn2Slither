@@ -1,53 +1,63 @@
 import gymnasium as gym
-import gymnasium_env
-import random
+import os
 from gymnasium.wrappers import RecordVideo, RecordEpisodeStatistics
 from src.ddqn_Agent_Snake import DDQNAgent
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-def learnSnake(filepath=None):
-    n_games = 15001
+def learnSnake(hp, filepath=None):
+    os.makedirs(os.path.dirname('src/learning_data/file'), exist_ok=True)
+    n_games = hp['episode_train']
     training_period = 200
     load_checkpoint = False
 
     scores = []
-    steps_array = []
     eps_history = []
     avg_score = []
     best_score = -100
 
-    env = gym.make('gymnasium_env/GridWorld-v0', render_mode='rgb_array', size=10)
+    if hp["visual"] is False:
+        env = gym.make('gymnasium_env/GridWorld-v0', render_mode='rgb_array',
+                       size=10)
 
-    env = RecordVideo(
-        env,
-        video_folder='Snake-agent',
-        name_prefix='train',
-        episode_trigger=lambda x: x % training_period == 0
-    )
+        env = RecordVideo(
+            env,
+            video_folder='Snake-agent',
+            name_prefix='train',
+            episode_trigger=lambda x: x % training_period == 0
+        )
 
-    env = RecordEpisodeStatistics(env)
+        env = RecordEpisodeStatistics(env)
+    else:
+        env = gym.make('gymnasium_env/GridWorld-v0', render_mode='human',
+                       size=10)
 
     input_dim = env.observation_space.shape
     output_dim = env.action_space.n
     agent = DDQNAgent(n_actions=output_dim, input_dims=input_dim)
     if filepath is not None:
         agent.load_model(filepath)
+        agent.epsilon = 0.05
     for episode in range(n_games):
         score = 0
         observation, _ = env.reset()
         done = 0
         n_steps = 0
         while not done:
-            action = agent.choose_action(observation, env)
-            observation_, reward, terminated, truncated, info = env.step(action)
+            if avg_score and avg_score[-1] > 30:
+                action = agent.choose_action(observation, env)
+            else:
+                action = agent.choose_action(observation, env, mode='USE')
+            observation_, reward, terminated, truncated, info =\
+                env.step(action)
             done = terminated or truncated
-            # print (observation_)
-            # input('press enter to continue...')
+            if hp["step_by_step"]:
+                input('press enter to continue...')
             score += reward
             if not load_checkpoint:
-                agent.memory.store_transition(observation, action, reward, observation_, done)
+                agent.memory.store_transition(observation, action,
+                                              reward, observation_, done)
                 agent.learn()
             observation = observation_
             n_steps += 1
@@ -57,16 +67,16 @@ def learnSnake(filepath=None):
         avg_score.append(np.mean(scores[-100:]))
 
         print('episode:', episode,
-            'average score %.1f' % avg_score[-1],
-            'score: %.2f' % score,
-            'best score %.2f' % best_score,
-            'epsilon %.2f' % agent.epsilon, 'steps', n_steps)
-        
+              'average score %.1f' % avg_score[-1],
+              'score: %.2f' % score,
+              'best score %.2f' % best_score,
+              'epsilon %.2f' % agent.epsilon, 'steps', n_steps)
+
         if score > best_score:
             best_score = score
-            agent.save_model("best_snake_model.pth")
-        if episode % 2000 == 0:
-            agent.save_model(f'checkpoint_ep_{episode}.pth')
+            agent.save_model("src/learning_data/best_snake_model.pth")
+        if episode % 200 == 0:
+            agent.save_model(f'src/learning_data/checkpoint_ep_{episode}.pth')
 
     env.close()
 

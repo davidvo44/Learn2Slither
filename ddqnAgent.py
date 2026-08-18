@@ -14,7 +14,7 @@ class DDQNAgent(object):
                  lr=0.0001,
                  gamma=0.99,
                  epsilon=1.0,
-                 epsilon_min=0.05,
+                 epsilon_min=0.01,
                  epsilon_decay=0.999995,
                  batch_size=32,
                  target_update_freq=1000,
@@ -59,16 +59,16 @@ class DDQNAgent(object):
         # Q-Valeurs prédites pour l'état actuel et l'action choisie
         q_pred = self.q_eval(states)[indices, actions]
 
-        # Calcul DDQN avec detach complet pour éviter de corrompre les gradients futurs
+        # Calcul DDQN
         with torch.no_grad():
             q_eval_next = self.q_eval(states_)
             max_actions = torch.argmax(q_eval_next, dim=1)
         
-        # 2. Évaluation de cette action par le modèle cible (Target Network)
+        # Évaluation de cette action par le modèle cible (Target Network)
             q_next_preds = self.q_next(states_)
             q_next_val = q_next_preds[indices, max_actions]
 
-        # 3. Si l'etat fini, pas de future
+        #  pas de suite si fini
             q_next_val[dones] = 0.0
 
         # Cible finale stabilisée
@@ -116,3 +116,4 @@ class DDQNAgent(object):
         dones = torch.tensor(dones, dtype=torch.bool)
 
         return states, actions, rewards, next_states, dones
+    
