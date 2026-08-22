@@ -4,7 +4,8 @@ import click
 
 def create_hyperparameter():
     hyperparam = {
-        'lr': 0.0005,
+        'board_size': 10,
+        'lr': 0.0001,
         'epsilon_decay': 0.99998,
         'batch_size': 128,
         'episode_train': 5001,
@@ -19,6 +20,7 @@ def create_hyperparameter():
 def menuParameter(parameter: dict):
     return inquirer.select(
         message="\n\nparameter Information:\n"
+        f"board_size : {parameter['board_size']}\n"
         f"Learning Rate : {parameter['lr']}\n"
         f"epsilon_decay : {parameter['epsilon_decay']}\n"
         f"batch_size : {parameter['batch_size']}\n"
@@ -27,7 +29,7 @@ def menuParameter(parameter: dict):
         f"step_by_step: {parameter['step_by_step']}\n"
         f"visual: {parameter['visual']}\n\n"
         "Select Parameter",
-        choices=["Learning Rate", "epsilon_decay", "batch_size",
+        choices=["board_size", "Learning Rate", "epsilon_decay", "batch_size",
                  "episode_train", "episode_apply",
                  "activate_mask", "step_by_step", "visual", "Done"]
     ).execute()
@@ -41,12 +43,23 @@ def addParameter():
             return parameter
         elif choice == "step_by_step" or choice == "visual":
             parameter[choice] = new_param_bool()
+        elif choice == "episode_train" or choice == "episode_apply" or\
+                choice == "batch_size" or choice == "board_size":
+            parameter[choice] = newParam_int(choice)
         else:
-            parameter[choice] = newParam(choice)
+            parameter[choice] = newParam_float(choice)
 
 
-def newParam(param):
+def newParam_float(param):
     newChange = click.prompt(f"\nNew data for {param}", type=float)
+    return newChange
+
+
+def newParam_int(param):
+    newChange = click.prompt(f"\nNew data for {param}", type=int)
+    if param == 'board_size':
+        while newChange <= 1:
+            newChange = click.prompt(f"\nError, {param} must be > 1", type=int)
     return newChange
 
 

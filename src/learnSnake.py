@@ -19,7 +19,7 @@ def learnSnake(hp, filepath=None):
 
     if hp["visual"] is False:
         env = gym.make('gymnasium_env/GridWorld-v0', render_mode='rgb_array',
-                       size=10)
+                       size=hp['board_size'])
 
         env = RecordVideo(
             env,
@@ -38,7 +38,7 @@ def learnSnake(hp, filepath=None):
     agent = DDQNAgent(n_actions=output_dim, input_dims=input_dim, hp=hp)
     if filepath is not None:
         agent.load_model(filepath)
-        agent.epsilon = 0.05
+        agent.epsilon += 0.05
     for episode in range(n_games):
         score = 0
         observation, _ = env.reset()

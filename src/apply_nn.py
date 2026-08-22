@@ -17,7 +17,7 @@ def use(hp, filepath=None, learn=False):
     (gymnasium_env)
     if hp["visual"] is False:
         env = gym.make('gymnasium_env/GridWorld-v0',
-                       render_mode='rgb_array', size=10)
+                       render_mode='rgb_array', size=hp['board_size'])
         env = RecordVideo(
             env,
             video_folder='Snake-play',

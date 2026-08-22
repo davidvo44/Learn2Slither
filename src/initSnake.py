@@ -6,7 +6,7 @@ from src.learnSnake import learnSnake
 from src.apply_nn import use
 from pathlib import Path
 from src.hyperparameter import addParameter
-
+import random
 
 def main():
     print("\nWelcome to Learn2Slither project")
@@ -77,7 +77,9 @@ def select_file(all_file):
 def create_loop():
     filescore = "None"
     param = addParameter()
+    board_size = 10
     for i in range(100):
+        param['board_size'] = board_size
         if filescore != "None":
             learnSnake(param, filescore)
         else:
@@ -104,7 +106,9 @@ def create_loop():
 
         print('SAVE:', filescore)
         file_path = Path(filescore)  # Ex: "src/learning_data/model.pth"
-
+        board_size += 1
+        if board_size == 31:
+            board_size == 2
         if file_path.exists():
             new_path = file_path.with_stem(file_path.stem + "_save")
             file_path.replace(new_path)
