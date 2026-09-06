@@ -8,7 +8,6 @@ from pathlib import Path
 from src.hyperparameter import addParameter
 import torch
 
-
 def main():
     print("\nWelcome to Learn2Slither project")
 
