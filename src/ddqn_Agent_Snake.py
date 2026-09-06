@@ -15,7 +15,7 @@ class DDQNAgent(object):
                  epsilon=1.0,
                  epsilon_min=0.01,
                  epsilon_decay=0.99998,
-                 batch_size=128,
+                 batch_size=512,
                  target_update_freq=1000,
                  mem_size=100000,
                  episodes=1000,
@@ -23,6 +23,7 @@ class DDQNAgent(object):
                  algo=None
                  ):
 
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.last_move = -1
         self.mem_cntr = 0
         self.learn_step_counter = 0
@@ -41,9 +42,9 @@ class DDQNAgent(object):
         self.memory = ReplayBuffer(mem_size, input_dims, n_actions)
 
         self.q_eval = DQN(lr=self.lr, n_action=self.n_actions,
-                          input_dim=self.input_dims)
+                          input_dim=self.input_dims).to(self.device)
         self.q_next = DQN(lr=self.lr, n_action=self.n_actions,
-                          input_dim=self.input_dims)
+                          input_dim=self.input_dims).to(self.device)
 
         self.q_next.load_state_dict(self.q_eval.state_dict())
         self.q_next.eval()
@@ -105,12 +106,12 @@ class DDQNAgent(object):
 
         # Mode Exploitation
         state = np.array(observation, dtype=np.float32)
-        state_t = torch.tensor(state).unsqueeze(0)
+        state_t = torch.tensor(state).unsqueeze(0).to(self.device)
 
         with torch.no_grad():
             actions = self.q_eval(state_t).squeeze(0)
         if mode == 'TRAIN':
-            mask_tensor = torch.tensor(valid_actions_mask, dtype=torch.bool)
+            mask_tensor = torch.tensor(valid_actions_mask, dtype=torch.bool, device=self.device)
             actions[~mask_tensor] = float('-inf')
         if visual is True:
             print('right:%.2f' % actions[0].item(),
@@ -141,11 +142,11 @@ class DDQNAgent(object):
         states, actions, rewards, next_states, dones = \
             self.memory.sample_buffer(self.batch_size)
 
-        states = torch.tensor(states, dtype=torch.float32)
-        actions = torch.tensor(actions, dtype=torch.long)
-        rewards = torch.tensor(rewards, dtype=torch.float32)
-        next_states = torch.tensor(next_states, dtype=torch.float32)
-        dones = torch.tensor(dones, dtype=torch.bool)
+        states = torch.as_tensor(states, dtype=torch.float32).to(self.device)
+        actions = torch.as_tensor(actions, dtype=torch.long).to(self.device)
+        rewards = torch.as_tensor(rewards, dtype=torch.float32).to(self.device)
+        next_states = torch.as_tensor(next_states, dtype=torch.float32).to(self.device)
+        dones = torch.as_tensor(dones, dtype=torch.bool).to(self.device)
 
         return states, actions, rewards, next_states, dones
 
@@ -161,7 +162,7 @@ class DDQNAgent(object):
 
     def load_model(self, filepath="snake_dqn.pth"):
         if os.path.exists(filepath):
-            checkpoint = torch.load(filepath)
+            checkpoint = torch.load(filepath, map_location=self.device)
             self.q_eval.load_state_dict(checkpoint['q_eval_state_dict'])
             self.q_next.load_state_dict(checkpoint['q_next_state_dict'])
             self.q_eval.optimizer.load_state_dict(

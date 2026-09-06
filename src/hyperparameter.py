@@ -11,7 +11,8 @@ def create_hyperparameter():
         'episode_apply': 501,
         'step_by_step': False,
         'visual': False,
-        'Training': True
+        'Training': True,
+        'board_size': 10
     }
     return hyperparam
 
@@ -25,11 +26,12 @@ def menuParameter(parameter: dict):
         f"episode_train: {parameter['episode_train']}\n"
         f"episode_apply: {parameter['episode_apply']}\n"
         f"step_by_step: {parameter['step_by_step']}\n"
+        f"board_size: {parameter['board_size']}\n"
         f"visual: {parameter['visual']}\n\n"
         "Select Parameter",
         choices=["Learning Rate", "epsilon_decay", "batch_size",
                  "episode_train", "episode_apply",
-                 "activate_mask", "step_by_step", "visual", "Done"]
+                 "activate_mask", "step_by_step", "visual", "board_size", "Done"]
     ).execute()
 
 

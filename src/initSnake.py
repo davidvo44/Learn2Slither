@@ -6,10 +6,17 @@ from src.learnSnake import learnSnake
 from src.apply_nn import use
 from pathlib import Path
 from src.hyperparameter import addParameter
+import torch
 
 
 def main():
     print("\nWelcome to Learn2Slither project")
+
+    print(f"PyTorch version : {torch.__version__}")
+    print(f"CUDA disponible  : {torch.cuda.is_available()}")
+
+    if torch.cuda.is_available():
+        print(f"Nom du GPU      : {torch.cuda.get_device_name(0)}")
     time.sleep(1)
 
     try:
@@ -77,7 +84,9 @@ def select_file(all_file):
 def create_loop():
     filescore = "None"
     param = addParameter()
-    for i in range(100):
+    board = param["board_size"]
+    for i in range(1000):
+        param["board_size"] = board
         if filescore != "None":
             learnSnake(param, filescore)
         else:
@@ -109,6 +118,9 @@ def create_loop():
             new_path = file_path.with_stem(file_path.stem + "_save")
             file_path.replace(new_path)
         filescore = str(new_path)
+        board += 1
+        if board == 50:
+            board = 3
 
 
 if __name__ == "__main__":
