@@ -17,7 +17,7 @@ class ReplayBuffer(object):
     def store_transition(self, state, action, reward, state_, done):
         index = self.mem_cntr % self.mem_size
 
-        #conversion en uint8
+        # conversion en uint8
         self.state_memory[index] = np.array(state, dtype=np.uint8)
         self.new_state_memory[index] = np.array(state_, dtype=np.uint8)
 

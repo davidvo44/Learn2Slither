@@ -34,7 +34,7 @@ class GridWorldEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(44,),
+            shape=(16,),
             dtype=np.float32
         )
 
@@ -90,28 +90,59 @@ class GridWorldEnv(gym.Env):
         return np.array(obs_list, dtype=np.float32)
 
     def create_vision(self, direction):
-        result = np.zeros(11)
-        starting = self._agent_location
-        for i in range(11):
-            if np.array_equal(starting, self._agent_location):
-                result[i] = PosMap.START.value
-            if np.array_equal(starting, self._target_location):
-                result[i] = PosMap.RED_APPLE.value
-            if np.array_equal(starting, self._green_apple[0]):
-                result[i] = PosMap.GREEN_APPLE.value
-            if np.array_equal(starting, self._green_apple[1]):
-                result[i] = PosMap.GREEN_APPLE.value
+        result = np.zeros(4, dtype=np.float32)
+
+        starting = self._agent_location + direction
+
+        for i in range(1, 11):
+            # 1. Détection du MUR
             if starting[0] < 0 or starting[0] >= self.size or \
-               starting[1] < 0 or starting[1] >= self.size:
-                result[i] = PosMap.WALL.value
+             starting[1] < 0 or starting[1] >= self.size:
+                result[3] = (10 - (i - 1)) / 10
                 break
-            else:
-                for y in self._agent_body:
-                    if np.array_equal(starting, y):
-                        result[i] = PosMap.BODY.value
-                        break
+
+            # 2. Détection de la POMME VERTE
+            if result[0] == 0:
+                if any(np.array_equal(starting, apple)
+                       for apple in self._green_apple):
+                    result[0] = (10 - (i - 1)) / 10
+
+            # 3. Détection de la POMME ROUGE
+            if result[1] == 0:
+                if np.array_equal(starting, self._target_location):
+                    result[1] = (10 - (i - 1)) / 10
+
+            # 4. Détection du CORPS
+            if result[2] == 0:
+                if any(np.array_equal(starting, segment)
+                       for segment in self._agent_body):
+                    result[2] = (10 - (i - 1)) / 10
             starting = starting + direction
+
         return result
+    # def create_vision(self, direction):
+    #     result = np.zeros(self.size + 1)
+    #     starting = self._agent_location
+    #     for i in range(self.size + 1):
+    #         if np.array_equal(starting, self._agent_location):
+    #             result[i] = PosMap.START.value
+    #         if np.array_equal(starting, self._target_location):
+    #             result[i] = PosMap.RED_APPLE.value
+    #         if np.array_equal(starting, self._green_apple[0]):
+    #             result[i] = PosMap.GREEN_APPLE.value
+    #         if np.array_equal(starting, self._green_apple[1]):
+    #             result[i] = PosMap.GREEN_APPLE.value
+    #         if starting[0] < 0 or starting[0] >= self.size or \
+    #            starting[1] < 0 or starting[1] >= self.size:
+    #             result[i] = PosMap.WALL.value
+    #             break
+    #         else:
+    #             for y in self._agent_body:
+    #                 if np.array_equal(starting, y):
+    #                     result[i] = PosMap.BODY.value
+    #                     break
+    #         starting = starting + direction
+    #     return result
 
     def _get_info(self):
         return {
@@ -209,14 +240,8 @@ class GridWorldEnv(gym.Env):
         for i in range(len(self._agent_body)):
             # Body Hit
             if np.array_equal(newpos, self._agent_body[i]):
-                if i != 0:
-                    reward += -10
-                    terminated = True
-            # First Body Hit
-                if i == 0:
-                    reward += -1.2
-                    newpos = self._agent_location
-                    break
+                reward += -10
+                terminated = True
         # Update Head Snake
         tmp_pos = self._agent_location
         self._agent_location = newpos
@@ -239,14 +264,14 @@ class GridWorldEnv(gym.Env):
                 terminated = True
 
         if np.array_equal(self._agent_location, self._green_apple[0]):
-            reward += 5.2
+            reward += 7.2
             self.add_snake_body()
             self._green_apple[0] = self.set_location()
         if np.array_equal(self._agent_location, self._green_apple[1]):
-            reward += 5.2
+            reward += 7.2
             self.add_snake_body()
             self._green_apple[1] = self.set_location()
-        reward -= 0.02
+        reward -= 0.01
 
         # An episode is done iff the agent has reached the target
         # reward = 1 if terminated else 0  # Binary sparse rewards

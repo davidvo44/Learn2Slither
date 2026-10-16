@@ -8,6 +8,7 @@ from pathlib import Path
 from src.hyperparameter import addParameter
 import torch
 
+
 def main():
     print("\nWelcome to Learn2Slither project")
 
@@ -118,7 +119,7 @@ def create_loop():
             file_path.replace(new_path)
         filescore = str(new_path)
         board += 1
-        if board == 50:
+        if board == 20:
             board = 3
 
 

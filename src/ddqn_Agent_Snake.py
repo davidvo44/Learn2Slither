@@ -13,7 +13,7 @@ class DDQNAgent(object):
                  hp,
                  gamma=0.99,
                  epsilon=1.0,
-                 epsilon_min=0.01,
+                 epsilon_min=0.05,
                  epsilon_decay=0.99998,
                  batch_size=512,
                  target_update_freq=1000,
@@ -23,7 +23,7 @@ class DDQNAgent(object):
                  algo=None
                  ):
 
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device('cpu')
         self.last_move = -1
         self.mem_cntr = 0
         self.learn_step_counter = 0
@@ -111,7 +111,8 @@ class DDQNAgent(object):
         with torch.no_grad():
             actions = self.q_eval(state_t).squeeze(0)
         if mode == 'TRAIN':
-            mask_tensor = torch.tensor(valid_actions_mask, dtype=torch.bool, device=self.device)
+            mask_tensor = torch.tensor(valid_actions_mask, dtype=torch.bool,
+                                       device=self.device)
             actions[~mask_tensor] = float('-inf')
         if visual is True:
             print('right:%.2f' % actions[0].item(),
@@ -145,7 +146,8 @@ class DDQNAgent(object):
         states = torch.as_tensor(states, dtype=torch.float32).to(self.device)
         actions = torch.as_tensor(actions, dtype=torch.long).to(self.device)
         rewards = torch.as_tensor(rewards, dtype=torch.float32).to(self.device)
-        next_states = torch.as_tensor(next_states, dtype=torch.float32).to(self.device)
+        next_states =\
+            torch.as_tensor(next_states, dtype=torch.float32).to(self.device)
         dones = torch.as_tensor(dones, dtype=torch.bool).to(self.device)
 
         return states, actions, rewards, next_states, dones

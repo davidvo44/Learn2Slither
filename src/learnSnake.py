@@ -10,7 +10,6 @@ def learnSnake(hp, filepath=None):
     os.makedirs(os.path.dirname('src/learning_data/file'), exist_ok=True)
     n_games = hp['episode_train']
     training_period = 200
-    load_checkpoint = False
 
     scores = []
     eps_history = []
@@ -43,6 +42,7 @@ def learnSnake(hp, filepath=None):
         score = 0
         observation, _ = env.reset()
         done = 0
+        steps_since_last_apple = 0
         n_steps = 0
         while not done:
             if avg_score and avg_score[-1] > 30:
@@ -51,21 +51,30 @@ def learnSnake(hp, filepath=None):
                 action = agent.choose_action(observation, env, mode='USE')
             observation_, reward, terminated, truncated, info =\
                 env.step(action)
+            # Si le serpent mange une pomme, on réinitialise le chrono !
+            if reward > 5.0:
+                steps_since_last_apple = 0
+
+            if steps_since_last_apple >= 200:
+                truncated = True
             done = terminated or truncated
             if hp["step_by_step"]:
                 input('press enter to continue...')
             score += reward
-            if not load_checkpoint:
-                agent.memory.store_transition(observation, action,
-                                              reward, observation_, done)
-                agent.learn()
+            agent.memory.store_transition(observation, action,
+                                          reward, observation_, done)
+
+            agent.learn()
             observation = observation_
             n_steps += 1
+            steps_since_last_apple += 1
 
         scores.append(score)
         eps_history.append(agent.epsilon)
         avg_score.append(np.mean(scores[-100:]))
-
+        if episode > 105 and episode % 200 == 1 and \
+           avg_score[-1] < avg_score[100] and agent.epsilon < 0.8:
+            agent.epsilon += 0.2
         print('episode:', episode,
               'average score %.1f' % avg_score[-1],
               'score: %.2f' % score,

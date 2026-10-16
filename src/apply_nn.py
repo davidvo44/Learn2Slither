@@ -32,13 +32,15 @@ def use(hp, filepath=None, learn=False):
 
     input_dim = env.observation_space.shape
     output_dim = env.action_space.n
-    agent = DDQNAgent(hp=hp, n_actions=output_dim, input_dims=input_dim)
+    agent = DDQNAgent(hp=hp, n_actions=output_dim, input_dims=input_dim,
+                      epsilon=0, epsilon_min=0)
     if filepath is not None:
         agent.load_model(filepath)
     for episode in range(n_games):
         score = 0
         observation, _ = env.reset()
         done = 0
+        steps_since_last_apple = 0
         n_steps = 0
         while not done:
             action = agent.choose_action(observation, env, visual=hp['visual'])
@@ -46,31 +48,34 @@ def use(hp, filepath=None, learn=False):
                 input('press enter to continue...')
             observation_, reward, terminated, truncated, info =\
                 env.step(action)
+            if reward > 5.0:
+                steps_since_last_apple = 0
+            if steps_since_last_apple >= 200:
+                truncated = True
             if hp["visual"]:
                 cli_snake_vision(observation_)
             done = terminated or truncated
             score += reward
             observation = observation_
             n_steps += 1
+            steps_since_last_apple += 1
 
         scores.append(score)
         avg_body.append(info['nbr_snake'])
         avg_score.append(np.mean(scores[-100:]))
 
-        if not learn:
-            print('episode:', episode,
-                  'average score %.1f' % avg_score[-1],
-                  'score: %.2f' % score,
-                  'best score %.2f' % best_score,
-                  'snake', avg_body[-1], 'steps', n_steps)
+        print('episode:', episode,
+              'average score %.1f' % avg_score[-1],
+              'score: %.2f' % score,
+              'best score %.2f' % best_score,
+              'snake', avg_body[-1], 'steps', n_steps)
 
         if score > best_score:
             best_score = score
 
     env.close()
 
-    if not learn:
-        print('final score :\n score: %.2f' % np.mean(scores),
-              'snake:%.2f' % np.mean(avg_body))
+    print('final score :\n score: %.2f' % np.mean(scores),
+          'snake:%.2f' % np.mean(avg_body))
 
     return (np.mean(scores))

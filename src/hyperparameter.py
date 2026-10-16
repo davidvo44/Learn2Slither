@@ -31,7 +31,8 @@ def menuParameter(parameter: dict):
         "Select Parameter",
         choices=["Learning Rate", "epsilon_decay", "batch_size",
                  "episode_train", "episode_apply",
-                 "activate_mask", "step_by_step", "visual", "board_size", "Done"]
+                 "activate_mask", "step_by_step",
+                 "visual", "board_size", "Done"]
     ).execute()
 
 
@@ -48,7 +49,7 @@ def addParameter():
 
 
 def newParam(param):
-    if param == "Learning Rate":
+    if param == "Learning Rate" or param == "epsilon_decay":
         newChange = click.prompt(f"\nNew data for {param}", type=float)
     else:
         newChange = click.prompt(f"\nNew data for {param}", type=int)
