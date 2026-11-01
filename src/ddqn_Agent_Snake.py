@@ -13,7 +13,7 @@ class DDQNAgent(object):
                  hp,
                  gamma=0.99,
                  epsilon=1.0,
-                 epsilon_min=0.05,
+                 epsilon_min=0.01,
                  epsilon_decay=0.99998,
                  batch_size=512,
                  target_update_freq=1000,
@@ -96,12 +96,10 @@ class DDQNAgent(object):
                            self.eps_dec * self.epsilon)
 
     def choose_action(self, observation, env, mode='TRAIN', visual=False):
-        valid_actions_mask = self.get_valid_actions_mask()
-        valid_indices = np.where(valid_actions_mask == 1)[0]
 
         # Mode Exploration
-        if random.random() < self.epsilon:
-            self.last_move = int(random.choice(valid_indices))
+        if random.random() < self.epsilon and mode == 'TRAIN':
+            self.last_move = random.randint(0, 3)
             return self.last_move
 
         # Mode Exploitation
@@ -110,10 +108,6 @@ class DDQNAgent(object):
 
         with torch.no_grad():
             actions = self.q_eval(state_t).squeeze(0)
-        if mode == 'TRAIN':
-            mask_tensor = torch.tensor(valid_actions_mask, dtype=torch.bool,
-                                       device=self.device)
-            actions[~mask_tensor] = float('-inf')
         if visual is True:
             print('right:%.2f' % actions[0].item(),
                   'left: %.2f' % actions[2].item(),
@@ -121,23 +115,6 @@ class DDQNAgent(object):
                   'down: %.2f' % actions[3].item())
         self.last_move = torch.argmax(actions).item()
         return self.last_move
-
-    def get_valid_actions_mask(self):
-        mask = np.ones(self.n_actions, dtype=np.int8)
-
-        OPPOSITE_ACTIONS = {
-            0: 2,
-            1: 3,
-            2: 0,
-            3: 1
-        }
-
-        if self.last_move != -1:
-            forbidden_action = OPPOSITE_ACTIONS.get(self.last_move)
-            if forbidden_action is not None:
-                mask[forbidden_action] = 0
-
-        return mask
 
     def sample_memory(self):
         states, actions, rewards, next_states, dones = \

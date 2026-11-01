@@ -74,7 +74,7 @@ class GridWorldEnv(gym.Env):
         self.window = None
         self.clock = None
 
-    def _get_obs(self):
+    def _get_obs(self, last_move=-1):
         # Vector direction : UP, DOWN, LEFT, RIGHT
         directions = [
             self._action_to_direction[Actions.UP.value],
@@ -86,8 +86,15 @@ class GridWorldEnv(gym.Env):
         obs_list = []
         for d in directions:
             obs_list.extend(self.create_vision(d))
+        direction_one_hot = np.zeros(4, dtype=np.float32)
+        if last_move != -1:
+            direction_one_hot[last_move] = 1.0
 
-        return np.array(obs_list, dtype=np.float32)
+        observation = np.concatenate([
+            np.array(obs_list, dtype=np.float32),
+            direction_one_hot
+        ])
+        return observation
 
     def create_vision(self, direction):
         result = np.zeros(4, dtype=np.float32)
@@ -271,11 +278,11 @@ class GridWorldEnv(gym.Env):
             reward += 7.2
             self.add_snake_body()
             self._green_apple[1] = self.set_location()
-        reward -= 0.01
+        reward -= 0.02
 
         # An episode is done iff the agent has reached the target
         # reward = 1 if terminated else 0  # Binary sparse rewards
-        observation = self._get_obs()
+        observation = self._get_obs(last_move=action)
         info = self._get_info()
 
         if self.render_mode == "human":

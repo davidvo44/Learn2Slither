@@ -45,17 +45,13 @@ def learnSnake(hp, filepath=None):
         steps_since_last_apple = 0
         n_steps = 0
         while not done:
-            if avg_score and avg_score[-1] > 30:
-                action = agent.choose_action(observation, env)
-            else:
-                action = agent.choose_action(observation, env, mode='USE')
+            action = agent.choose_action(observation, env)
             observation_, reward, terminated, truncated, info =\
                 env.step(action)
-            # Si le serpent mange une pomme, on réinitialise le chrono !
             if reward > 5.0:
                 steps_since_last_apple = 0
 
-            if steps_since_last_apple >= 200:
+            if steps_since_last_apple >= 400:
                 truncated = True
             done = terminated or truncated
             if hp["step_by_step"]:

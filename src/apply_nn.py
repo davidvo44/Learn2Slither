@@ -63,19 +63,20 @@ def use(hp, filepath=None, learn=False):
         scores.append(score)
         avg_body.append(info['nbr_snake'])
         avg_score.append(np.mean(scores[-100:]))
-
-        print('episode:', episode,
-              'average score %.1f' % avg_score[-1],
-              'score: %.2f' % score,
-              'best score %.2f' % best_score,
-              'snake', avg_body[-1], 'steps', n_steps)
+        if not learn:
+            print('episode:', episode,
+                  'average score %.1f' % avg_score[-1],
+                  'score: %.2f' % score,
+                  'best score %.2f' % best_score,
+                  'snake', avg_body[-1], 'steps', n_steps)
 
         if score > best_score:
             best_score = score
 
     env.close()
 
-    print('final score :\n score: %.2f' % np.mean(scores),
-          'snake:%.2f' % np.mean(avg_body))
+    if not learn:
+        print('final score :\n score: %.2f' % np.mean(scores),
+              'snake:%.2f' % np.mean(avg_body))
 
     return (np.mean(scores))
