@@ -34,7 +34,7 @@ class GridWorldEnv(gym.Env):
         self.observation_space = spaces.Box(
             low=0.0,
             high=1.0,
-            shape=(16,),
+            shape=(20,),
             dtype=np.float32
         )
 

@@ -1,5 +1,5 @@
 import torch
-from replayBufferClass import ReplayBuffer
+from src.replayBuffer import ReplayBuffer
 from src.dqn import DQN
 import numpy as np
 import random
